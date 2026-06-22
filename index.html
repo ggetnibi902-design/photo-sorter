@@ -20,4 +20,247 @@ header p{font-size:11px;color:#999}
 .preview-wrap{display:none;margin-bottom:12px}
 .preview-wrap.show{display:block}
 .preview-label{font-size:12px;color:#888;margin-bottom:6px}
-.preview-grid{display:grid;grid-template-columns:repe
+.preview-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.p-thumb{aspect-ratio:1;border-radius:7px;overflow:hidden;position:relative}
+.p-thumb img{width:100%;height:100%;object-fit:cover}
+.p-more{position:absolute;inset:0;background:rgba(0,0,0,.5);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.btn-analyze{width:100%;background:linear-gradient(135deg,#E85D8A,#FF8FB1);color:#fff;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:14px;display:none}
+.btn-analyze.show{display:block}
+.btn-analyze:disabled{opacity:.5}
+.status{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:14px;display:none;border-left:4px solid #E85D8A}
+.status.show{display:block}
+.status h4{font-size:13px;font-weight:700;color:#E85D8A;margin-bottom:6px}
+.prog-bar{background:#FFD6E0;border-radius:99px;height:7px;overflow:hidden}
+.prog-fill{background:linear-gradient(90deg,#E85D8A,#FF8FB1);height:100%;border-radius:99px;transition:width .4s;width:0%}
+.prog-text{font-size:12px;color:#888;margin-top:5px}
+.folders-wrap{display:none}
+.folders-wrap.show{display:block}
+.f-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.f-header h2{font-size:15px;font-weight:700}
+.folder-card{background:#fff;border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 8px rgba(232,93,138,.07)}
+.f-head{padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #fff0f5}
+.f-ico{font-size:18px}
+.f-name-wrap{flex:1;min-width:0}
+.f-name{font-size:14px;font-weight:700;color:#333;border:none;background:transparent;width:100%;outline:none}
+.f-name:focus{border-bottom:2px solid #E85D8A}
+.f-cnt{font-size:11px;color:#bbb;margin-top:2px}
+.f-btns{display:flex;gap:5px}
+.btn-xs{border:none;border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer;font-weight:600}
+.btn-xs.y{background:#FEE500;color:#333}
+.btn-xs.r{background:#ffe8ee;color:#E85D8A}
+.f-photos{padding:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.f-photo{aspect-ratio:1;border-radius:7px;overflow:hidden;position:relative}
+.f-photo img{width:100%;height:100%;object-fit:cover}
+.f-photo .del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.f-photo:hover .del{display:flex}
+.f-foot{padding:8px 14px;border-top:1px solid #fff0f5}
+.btn-add{background:#fff5f7;border:1px dashed #FFB3CC;border-radius:7px;padding:7px;font-size:11px;color:#E85D8A;cursor:pointer;text-align:center;display:block}
+.empty{text-align:center;padding:40px 20px;color:#ccc}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;z-index:999;max-width:90vw;text-align:center;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div style="font-size:22px">🗂️</div>
+  <div><h1>사진 자동 분류기</h1><p>AI 얼굴 인식 • 폴더 영구 저장 • 카톡 공유</p></div>
+</header>
+<div class="wrap">
+  <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+    <div style="font-size:32px">📷</div>
+    <h2>사진 올리기</h2>
+    <p>카톡 사진, 갤러리 사진 모두 OK<br>30장씩 올리는 것을 권장해요</p>
+  </div>
+  <input type="file" id="fileInput" accept="image/*" multiple>
+  <div class="preview-wrap" id="previewWrap">
+    <div class="preview-label" id="previewLabel"></div>
+    <div class="preview-grid" id="previewGrid"></div>
+  </div>
+  <button class="btn-analyze" id="analyzeBtn" onclick="analyze()">✨ AI로 자동 분류하기</button>
+  <div class="status" id="status">
+    <h4>🤖 AI 분석 중...</h4>
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog-text" id="progText">잠시만 기다려주세요</div>
+  </div>
+  <div class="folders-wrap" id="foldersWrap">
+    <div class="f-header"><h2>📁 폴더 목록</h2></div>
+    <div id="folderList"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const SB_URL='https://hyhbxewdmrpzgxcwtzvy.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5aGJ4ZXdkbXJwemd4Y3d0enZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNjY2MTUsImV4cCI6MjA5NzY0MjYxNX0.dhO1oYriNaoG-FfMoyaN85lfBaGmGuAhD6ADarNCpvg';
+const db=window.supabase.createClient(SB_URL,SB_KEY);
+let newPhotos=[],folders={};
+
+window.onload=async()=>{ await loadFolders(); };
+
+async function loadFolders(){
+  try{
+    const{data:fl,error}=await db.from('folders').select('*').order('created_at');
+    if(error){console.error(error);return;}
+    folders={};
+    for(const f of(fl||[])){
+      const{data:ph}=await db.from('photos').select('*').eq('folder_id',f.id).order('created_at');
+      folders[f.id]={...f,photos:ph||[]};
+    }
+    renderFolders();
+  }catch(e){console.error(e);}
+}
+
+document.getElementById('fileInput').addEventListener('change',e=>{
+  const files=Array.from(e.target.files);
+  if(!files.length)return;
+  newPhotos=[];
+  let done=0;
+  files.forEach(file=>{
+    const id=Date.now()+Math.random();
+    const r=new FileReader();
+    r.onload=ev=>{
+      newPhotos.push({id,file,dataUrl:ev.target.result,name:file.name});
+      if(++done===files.length)renderPreview();
+    };
+    r.readAsDataURL(file);
+  });
+});
+
+function renderPreview(){
+  document.getElementById('previewWrap').classList.add('show');
+  document.getElementById('analyzeBtn').classList.add('show');
+  document.getElementById('previewLabel').textContent=newPhotos.length+'장 선택됨';
+  const g=document.getElementById('previewGrid');
+  g.innerHTML='';
+  newPhotos.slice(0,10).forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='p-thumb';
+    d.innerHTML='<img src="'+p.dataUrl+'">';
+    if(i===9&&newPhotos.length>10)d.innerHTML+='<div class="p-more">+'+(newPhotos.length-10)+'</div>';
+    g.appendChild(d);
+  });
+}
+
+async function callClaude(messages){
+  const res=await fetch('/.netlify/functions/claude',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages})
+  });
+  const text=await res.text();
+  console.log('서버 응답 status:',res.status);
+  console.log('서버 응답 body:',text.slice(0,500));
+  if(!res.ok){
+    console.error('Claude 오류:',res.status,text);
+    throw new Error('Claude 오류 '+res.status+': '+text.slice(0,200));
+  }
+  if(!text||text.trim()==='')throw new Error('서버 응답이 비어있어요.');
+  const data=JSON.parse(text);
+  if(data.error)throw new Error(typeof data.error==='string'?data.error:data.error.message||'API 오류');
+  return data;
+}
+
+async function analyze(){
+  if(!newPhotos.length){toast('사진을 먼저 올려주세요!');return;}
+  const btn=document.getElementById('analyzeBtn');
+  const statusEl=document.getElementById('status');
+  btn.disabled=true;statusEl.classList.add('show');
+  setProgress(5,'준비 중...');
+  try{
+    const existList=Object.values(folders);
+    const results={};
+    const batchSize=5;
+    for(let i=0;i<newPhotos.length;i+=batchSize){
+      const batch=newPhotos.slice(i,i+batchSize);
+      setProgress(10+(i/newPhotos.length*65),(i+1)+'~'+Math.min(i+batchSize,newPhotos.length)+'번째 분석 중...');
+      const content=[];
+      if(existList.length>0){
+        content.push({type:'text',text:'=== 기존 폴더 대표 사진 ==='});
+        for(const ef of existList.slice(0,5)){
+          if(!ef.photos[0]?.url)continue;
+          try{
+            const res=await fetch(ef.photos[0].url);
+            const blob=await res.blob();
+            const b64=await toB64(blob);
+            content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64.split(',')[1]}});
+            content.push({type:'text',text:'기존폴더ID='+ef.id+' 이름='+ef.name});
+          }catch(e){}
+        }
+      }
+      content.push({type:'text',text:'=== 분류할 새 사진 ==='});
+      batch.forEach((p,j)=>{
+        content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:p.dataUrl.split(',')[1]}});
+        content.push({type:'text',text:'사진'+(i+j+1)});
+      });
+      const existInfo=existList.map(f=>'ID='+f.id+' 이름='+f.name).join(', ');
+      const keyList=batch.map((_,j)=>'"사진'+(i+j+1)+'":"그룹명"').join(',');
+      content.push({type:'text',text:'새 사진 '+batch.length+'장을 분류해주세요.\n기존폴더: '+(existInfo||'없음')+'\n\n규칙:\n1. 기존 폴더 인물과 같으면 해당 폴더 ID 사용\n2. 새 인물이면 "새그룹A","새그룹B" 등\n3. 사람 없으면 "기타"\n\nJSON만 응답:{'+keyList+'}'});
+      const data=await callClaude([{role:'user',content}]);
+      const txt=data.content.map(c=>c.text||'').join('');
+      const clean=txt.replace(/```json|```/g,'').trim();
+      const parsed=JSON.parse(clean);
+      batch.forEach((p,j)=>{results[p.id]=parsed['사진'+(i+j+1)]||'기타';});
+    }
+    setProgress(82,'저장 중...');
+    const groupMap={};
+    Object.entries(results).forEach(([id,g])=>{if(!groupMap[g])groupMap[g]=[];groupMap[g].push(id);});
+    for(const[gName,ids]of Object.entries(groupMap)){
+      let fid=gName;
+      if(!folders[gName]){
+        const cleanName=gName.replace('새그룹','그룹');
+        const{data:nf,error}=await db.from('folders').insert({name:cleanName}).select().single();
+        if(error){toast('폴더 오류: '+error.message);continue;}
+        fid=nf.id;folders[fid]={...nf,photos:[]};
+      }
+      for(const pid of ids){
+        const photo=newPhotos.find(p=>p.id==pid);
+        if(!photo)continue;
+        const ext=photo.name.split('.').pop()||'jpg';
+        const fn=fid+'/'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;
+        const blob=dataUrlToBlob(photo.dataUrl);
+        const{error:ue}=await db.storage.from('photos').upload(fn,blob,{contentType:blob.type});
+        if(ue){toast('업로드 오류: '+ue.message);continue;}
+        const{data:ud}=db.storage.from('photos').getPublicUrl(fn);
+        const{data:pr}=await db.from('photos').insert({folder_id:fid,file_name:photo.name,storage_path:fn,url:ud.publicUrl}).select().single();
+        if(pr)folders[fid].photos.push(pr);
+      }
+    }
+    setProgress(100,'완료!');
+    setTimeout(()=>{
+      statusEl.classList.remove('show');btn.classList.remove('show');btn.disabled=false;
+      document.getElementById('previewWrap').classList.remove('show');newPhotos=[];
+      renderFolders();toast('✅ 분류 완료!');
+    },500);
+  }catch(err){
+    toast('오류: '+err.message);console.error(err);
+    btn.disabled=false;document.getElementById('status').classList.remove('show');
+  }
+}
+
+function renderFolders(){
+  const wrap=document.getElementById('foldersWrap');
+  const list=document.getElementById('folderList');
+  wrap.classList.add('show');list.innerHTML='';
+  const arr=Object.values(folders);
+  if(!arr.length){list.innerHTML='<div class="empty"><div style="font-size:40px">📂</div><p>아직 폴더가 없어요<br>사진을 올려서 분류해보세요!</p></div>';return;}
+  const em=['🧒','👧','👦','🧒‍♀️','🧒‍♂️','👶','🎨','📸','🌟','🦋'];
+  arr.forEach((f,i)=>{
+    const card=document.createElement('div');
+    card.className='folder-card';
+    const photos=f.photos.map(p=>'<div class="f-photo"><img src="'+p.url+'" loading="lazy"><button class="del" onclick="delPhoto(\''+f.id+'\',\''+p.id+'\',\''+p.storage_path+'\')">✕</button></div>').join('');
+    card.innerHTML='<div class="f-head"><div class="f-ico">'+em[i%em.length]+'</div><div class="f-name-wrap"><input class="f-name" value="'+f.name+'" onchange="renameF(\''+f.id+'\',this.value)"><div class="f-cnt">'+f.photos.length+'장</div></div><div class="f-btns"><button class="btn-xs y" onclick="shareF(\''+f.id+'\')">💬 공유</button><button class="btn-xs r" onclick="delF(\''+f.id+'\')">🗑️</button></div></div><div class="f-photos">'+photos+'</div><div class="f-foot"><div class="btn-add" onclick="addPh(\''+f.id+'\')">+ 사진 추가</div></div>';
+    list.appendChild(card);
+  });
+}
+
+async function renameF(id,name){if(!name.trim())return;await db.from('folders').update({name}).eq('id',id);folders[id].name=name;toast('"'+name+'"으로 변경됐어요');}
+async function delF(id){if(!confirm('폴더와 사진을 모두 삭제할까요?'))return;const paths=folders[id].photos.map(p=>p.storage_path);if(paths.length)await db.storage.from('photos').remove(paths);await db.from('folders').delete().eq('id',id);delete folders[id];renderFolders();toast('삭제됐어요');}
+async function delPhoto(fid,pid,path){await db.storage.from('photos').remove([path]);await db.from('photos').delete().eq('id',pid);folders[fid].photos=folders[fid].photos.filter(p=>p.id!==pid);renderFolders();toast('사진 삭제됐어요');}
+function addPh(fid){const input=document.createElement('input');input.type='file';input.accept='image/*';input.multiple=true;input.onchange=async e=>{toast('업로드 중...');for(const file of Array.from(e.target.files)){const ext=file.name.split('.').pop()||'jpg';const fn=fid+'/'+Date.now()+'.'+ext;const{error}=await db.storage.from('photos').upload(fn,file);if(error)continue;const{data:ud}=db.storage.from('photos').getPublicUrl(fn);const{data:pr}=await db.from('photos').insert({folder_id:fid,file_name:file.name,storage_path:fn,url:ud.publicUrl}).select().single();if(pr)folders[fid].photos.push(pr);}renderFolders();toast('추가됐어요!');};input.click();}
+async function shareF(fid){const f=folders[fid];if(!f?.photos.length){toast('사진이 없어요');return;}try{const files=await Promise.all(f.photos.slice(0,10).map(async p=>{const res=await fetch(p.url);const blob=await res.blob();return new File([blob],p.file_name||'photo.jpg',{type:'image/jpeg'});}));if(navigator.share&&navigator.canShare?.({files})){await navigator.share({title:f.name,files});toast('공유 완료!');}else{const zip=new JSZip();const zf=zip.folder(f.name);files.forEach((file,i)=>zf.file(f.name+'_'+(i+1)+'.jpg',file));const blob=await zip.generateAsync({type:'blob'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=f.name+'.zip';a.click();URL.revokeObjectURL(url);toast('ZIP 다운로드 완료!');}}catch(e){if(e.name!=='AbortError')toast('공유 오류');}}
+function setProgress(pct,text){document.getElementById('progFill').style.width=pct+'%';document.getElementById('progText').textContent=text;}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000);}
+function dataUrlToBlob(d){const arr=d.split(',');const mime=arr[0].match(/:(.*?);/)[1];const b=atob(arr[1]);let n=b.length;const u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:mime});}
+function toB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);});}
+</script>
+</body>
+</html>
