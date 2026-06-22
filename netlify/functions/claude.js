@@ -12,7 +12,6 @@ exports.handler = async (event) => {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      console.error('ANTHROPIC_API_KEY 환경변수가 없음');
       return { statusCode: 500, headers, body: JSON.stringify({ error: 'API 키가 서버에 설정되지 않았습니다.' }) };
     }
 
@@ -36,21 +35,16 @@ exports.handler = async (event) => {
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
           console.log('Anthropic status:', res.statusCode);
-          console.log('Anthropic body:', data.slice(0, 500));
           resolve({ status: res.statusCode, body: data });
         });
       });
-      req.on('error', (e) => {
-        console.error('https 요청 오류:', e.message);
-        reject(e);
-      });
+      req.on('error', reject);
       req.write(body);
       req.end();
     });
 
     return { statusCode: result.status, headers, body: result.body };
   } catch(e) {
-    console.error('함수 오류:', e.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
   }
 };
