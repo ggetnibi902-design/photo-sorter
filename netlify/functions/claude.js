@@ -6,14 +6,20 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
-  
+
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
-  
+
   try {
-    const { apiKey, messages } = JSON.parse(event.body);
-    
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.error('ANTHROPIC_API_KEY 환경변수가 없음');
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'API 키가 서버에 설정되지 않았습니다.' }) };
+    }
+
+    const { messages } = JSON.parse(event.body);
+
     const result = await new Promise((resolve, reject) => {
-      const body = JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800, messages });
+      const body = JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 800, messages });
       const options = {
         hostname: 'api.anthropic.com',
         path: '/v1/messages',
@@ -28,15 +34,23 @@ exports.handler = async (event) => {
       const req = https.request(options, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
-        res.on('end', () => resolve({ status: res.statusCode, body: data }));
+        res.on('end', () => {
+          console.log('Anthropic status:', res.statusCode);
+          console.log('Anthropic body:', data.slice(0, 500));
+          resolve({ status: res.statusCode, body: data });
+        });
       });
-      req.on('error', reject);
+      req.on('error', (e) => {
+        console.error('https 요청 오류:', e.message);
+        reject(e);
+      });
       req.write(body);
       req.end();
     });
-    
+
     return { statusCode: result.status, headers, body: result.body };
   } catch(e) {
+    console.error('함수 오류:', e.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
   }
 };
