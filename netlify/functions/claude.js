@@ -18,7 +18,7 @@ exports.handler = async (event) => {
     const { messages } = JSON.parse(event.body);
 
     const result = await new Promise((resolve, reject) => {
-      const body = JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 800, messages });
+      const body = JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages });
       const options = {
         hostname: 'api.anthropic.com',
         path: '/v1/messages',
